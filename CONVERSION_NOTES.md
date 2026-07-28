@@ -61,8 +61,9 @@ star's `dataTable` from the flat rows at load, identical to the AS. Masses:
 
 - **Reused as‑is** (copied to `assets/`, never redrawn): the planet's five state
   frames plus its blank default (`sprites/DefineSprite_38_SHZDiagramPlanet/1–6.png`
-  → `planet-*.png`) and the H‑R density map (`images/43.jpg` →
-  `hr-background.jpg`). Frame→label order was read from the `FrameLabel` tags in
+  → `planet-*.png`), the H‑R density map (`images/43.jpg` →
+  `hr-background.jpg`), and the habitable‑zone indicator arrow
+  (`sprites/DefineSprite_54_SHZDiagramZoneArrow/1.png` → `zone-arrow.png`). Frame→label order was read from the `FrameLabel` tags in
   `_assets/assets.swf` and cross‑checked visually: 1 = default, 2 = destroyed,
   3 = tidally locked, 4 = too hot, 5 = just right (Earth), 6 = too cold.
 - **Code‑drawn** (built at runtime by the AS, so reproduced on canvas): the star
@@ -149,5 +150,13 @@ adjusted. Two changes were made **to the copy only**:
 - **Diagram text labels** ("Habitable Zone", orbit names, "too hot/too cold",
   history tags) are HTML overlays or canvas text that scale with the canvas; they
   are also included in the screen‑reader description of each panel.
+- **Habitable‑zone indicator arrow** is ported from `SHZDiagramZone.update()`
+  with the same thresholds: it appears pointing right when the zone's inner edge
+  lies past the right edge of the diagram (`inner·scale > width − starX − 7`), and
+  rotated back toward the star when the whole zone is smaller than 22 px
+  (`outer·scale < 22`). It reuses the exported arrow art and is placed relative to
+  the "Habitable Zone" label exactly as the AS does. The label is now clamped to
+  the right edge (as the AS does) rather than hidden. Both arrow states are also
+  described in the diagram's screen‑reader text.
 
 Nothing in the underlying physics/logic was changed; only presentation adapts.

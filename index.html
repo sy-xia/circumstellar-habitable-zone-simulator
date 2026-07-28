@@ -72,6 +72,14 @@
                  canvas) so it stays crisp; positioned by JS over the band. -->
             <span class="shz-zone-label" id="zoneLabel" aria-hidden="true">Habitable Zone</span>
 
+            <!-- Reused exported arrow art (sprites/DefineSprite_54_
+                 SHZDiagramZoneArrow). Shown only when the zone is off the right
+                 edge of the diagram (points right, toward it) or is so small it
+                 is hidden behind the star (rotated to point back at the star),
+                 matching SHZDiagramZone.update(). -->
+            <img class="shz-zone-arrow" id="zoneArrow" src="assets/zone-arrow.png"
+                 alt="" aria-hidden="true" hidden>
+
             <!-- Full-canvas zoom control. Dragging left/right zooms the diagram
                  in and out (matching the AS "zoomer"); once focused, the arrow
                  keys zoom too. It sits BELOW the planet handle so clicks on the

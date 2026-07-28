@@ -137,6 +137,18 @@
   text-shadow: 0 0 3px #000, 0 0 3px #000;
 }
 
+/* Zone indicator arrow (reused exported art). Centred on the point JS computes
+   and rotated in place; --rot is set per frame. */
+.shz-zone-arrow {
+  position: absolute;
+  width: 14px;
+  height: 10px;
+  transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+  pointer-events: none;
+  image-rendering: auto;
+}
+.shz-zone-arrow[hidden] { display: none; }
+
 /* Transparent proxies over the canvas. touch-action:none so a drag never
    scrolls the page. The zoom proxy fills the stage; the planet handle sits on
    top so pointer-downs on the planet drag it and everywhere else zooms. */

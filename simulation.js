@@ -395,7 +395,7 @@
      7. DOM handles + canvases
      --------------------------------------------------------------------------- */
   var els = {};
-  ['liveRegion', 'diagramStage', 'diagramCanvas', 'zoneLabel', 'zoomProxy', 'planetHandle',
+  ['liveRegion', 'diagramStage', 'diagramCanvas', 'zoneLabel', 'zoneArrow', 'zoomProxy', 'planetHandle',
    'diagramDesc', 'showGrid', 'showRefOrbits',
    'systemSelect', 'massField', 'massSlider', 'distField', 'distSlider',
    'roMass', 'roLum', 'roTemp', 'roRadius', 'roDistance',
@@ -895,18 +895,31 @@
     els.diagramStage.appendChild(e);
     return e;
   }
+  // SHZDiagramZone.update() label + arrow placement. All coordinates are
+  // star-relative stage units (origin at the star), exactly as in the AS:
+  // labelLeft/labelTop are the label's left/top edges.
+  var ARROW_MAX_THRESHOLD = DIAG_W - STAR_X - 7;   // zone inner edge past the right edge
+  var ARROW_MIN_THRESHOLD = 22;                    // whole zone tiny, hidden by the star
   function positionZoneLabel() {
-    var el = els.zoneLabel;
-    if (!state.zoneVisible) { el.style.display = 'none'; return; }
+    var el = els.zoneLabel, arrow = els.zoneArrow;
+    if (!state.zoneVisible) { el.style.display = 'none'; arrow.hidden = true; state.zoneArrowHint = null; return; }
     el.style.display = '';
+
+    // Label size in stage units (the overlay text is CSS-sized, so convert).
+    var stageW = els.diagramStage.clientWidth || DIAG_W;
+    var k = DIAG_W / stageW;
+    var lw = el.offsetWidth * k, lh = el.offsetHeight * k;
+
     var scale = state.scale, inner = state.zoneInner, outer = state.zoneOuter;
     var r = (inner + (outer - inner) / 2) * scale;
     var labelBaseX = 200, labelBaseY = -(DIAG_H / 2 - 35);
     var labelBaseR = Math.sqrt(labelBaseX * labelBaseX + labelBaseY * labelBaseY);
+    var labelMaxX = DIAG_W - STAR_X - lw - 27;
     var curveX = labelBaseX / 4, KX1 = 2 * curveX, KX2 = labelBaseX - 2 * curveX;
     var KY1 = 2 * labelBaseY, KY2 = labelBaseY - 2 * labelBaseY;
-    var lx, ly;
+    var labelLeft, labelTop;
     if (r < labelBaseR) {
+      // follow the quadratic guide curve inward (bisection on its parameter)
       var u = 0.5, uStep = 0.25, ux = 0, uy = 0;
       for (var i = 0; i < 12; i++) {
         ux = u * (KX1 + u * KX2); uy = u * (KY1 + u * KY2);
@@ -914,16 +927,40 @@
         if (ur > r) u -= uStep; else u += uStep;
         uStep *= 0.5;
       }
-      lx = ux; ly = uy - (uy - labelBaseY) / 2.3;
+      labelLeft = ux - lw / 2;
+      labelTop = uy - (uy - labelBaseY) / 2.3;
     } else {
-      lx = Math.sqrt(r * r - labelBaseY * labelBaseY);
-      ly = labelBaseY;
+      labelLeft = Math.sqrt(r * r - labelBaseY * labelBaseY) - lw / 2;
+      labelTop = labelBaseY;
+      // AS clamps (never hides) so the label stays on screen at the right edge
+      if (labelLeft > labelMaxX) labelLeft = labelMaxX;
     }
-    // convert orbit-space (origin at star) to canvas coords
-    var cx = STAR_X + lx, cy = DIAG_H / 2 + ly;
-    if (cx > DIAG_W - 8 || cx < STAR_X) { el.style.display = 'none'; return; }
-    el.style.left = pctX(cx, DIAG_W);
-    el.style.top = pctY(cy, DIAG_H);
+
+    // place the label (CSS centres it on the given point)
+    el.style.left = pctX(STAR_X + labelLeft + lw / 2, DIAG_W);
+    el.style.top = pctY(DIAG_H / 2 + labelTop + lh / 2, DIAG_H);
+
+    // --- arrow ---
+    var ax, ay, rot;
+    state.zoneArrowHint = (inner * scale > ARROW_MAX_THRESHOLD) ? 'offscreen'
+      : (outer * scale < ARROW_MIN_THRESHOLD) ? 'atstar' : null;
+    if (inner * scale > ARROW_MAX_THRESHOLD) {
+      // zone lies beyond the right edge: arrow sits after the label, pointing
+      // right (the art's natural direction) toward the off-screen zone
+      // +7 = half the 14px art, so the 5px gap after the label reads correctly
+      // once the arrow is centred on this point
+      ax = labelLeft + lw + 5 + 7; ay = labelTop + lh / 2; rot = 0;
+    } else if (outer * scale < ARROW_MIN_THRESHOLD) {
+      // zone is tiny and hidden behind the star: point back at the star
+      ax = labelLeft + lw / 2; ay = labelTop + lh - 2;
+      rot = 180 + 180 / Math.PI * Math.atan2(ay, ax);
+    } else {
+      arrow.hidden = true; return;
+    }
+    arrow.hidden = false;
+    arrow.style.left = pctX(STAR_X + ax, DIAG_W);
+    arrow.style.top = pctY(DIAG_H / 2 + ay, DIAG_H);
+    arrow.style.setProperty('--rot', rot + 'deg');
   }
   function positionHistoryTags(sx) {
     var epochs = state.selectedStar.epochsList;
@@ -1397,6 +1434,11 @@
     var zone = state.zoneVisible
       ? ('Habitable zone from ' + getNumberString(state.zoneInner, 3) + ' to ' + getNumberString(state.zoneOuter, 3) + ' astronomical units. ')
       : 'The star is no longer on the main sequence; no habitable zone is shown. ';
+    // same information the on-screen arrow conveys
+    if (state.zoneArrowHint === 'offscreen')
+      zone += 'The habitable zone lies beyond the right edge of the diagram; an arrow points toward it. ';
+    else if (state.zoneArrowHint === 'atstar')
+      zone += 'The habitable zone is too small to see at this scale, close around the star; an arrow points to it. ';
     els.diagramDesc.textContent =
       'Top-down view of the star system. Star mass ' + getNumberString(d.mass, 3) + ' solar masses, temperature ' +
       getNumberString(pow10(d.logTemp), 3) + ' kelvin, radius ' + getNumberString(pow10(d.logRadius), 3) + ' solar radii. ' +
