@@ -132,6 +132,11 @@
   color: #cfe0ff;
   font-weight: bold;
   font-size: 0.8rem;
+  /* The foundation's .panel__canvas-wrap sets line-height:0, which would
+     collapse this inline span to a zero-height box — the arrow placement maths
+     measures this element, so give it a real line box. */
+  display: inline-block;
+  line-height: 1.25;
   white-space: nowrap;
   pointer-events: none;
   text-shadow: 0 0 3px #000, 0 0 3px #000;

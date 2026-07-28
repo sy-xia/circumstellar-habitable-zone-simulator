@@ -951,8 +951,15 @@
       // once the arrow is centred on this point
       ax = labelLeft + lw + 5 + 7; ay = labelTop + lh / 2; rot = 0;
     } else if (outer * scale < ARROW_MIN_THRESHOLD) {
-      // zone is tiny and hidden behind the star: point back at the star
-      ax = labelLeft + lw / 2; ay = labelTop + lh - 2;
+      // Zone is tiny and hidden behind the star: point back at the star. The AS
+      // places the arrow at the label's bottom edge; because the exported art is
+      // centred on its position (and grows to 14 units tall once rotated), drop
+      // it a further half-diagonal so it hangs clear of the text instead of
+      // overlapping the last line.
+      // clearance is derived from the arrow's real on-screen size (it is a fixed
+      // CSS-pixel image, so convert through k) => correct at any stage scale
+      ax = labelLeft + lw / 2;
+      ay = labelTop + lh - 2 + (14 * k) / 2 + 3 * k;
       rot = 180 + 180 / Math.PI * Math.atan2(ay, ax);
     } else {
       arrow.hidden = true; return;
